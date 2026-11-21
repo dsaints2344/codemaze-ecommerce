@@ -4,6 +4,7 @@ using System.Text;
 using System.Text.Json;
 using Basket.Service.IntegrationEvents;
 using Basket.Service.Infrastructure.Data;
+using ECommerce.Shared.Infrastructure.RabbitMq;
 
 namespace Basket.Service.Infrastructure.RabbitMq;
 
@@ -21,36 +22,36 @@ public class RabbitMqHostedService : IHostedService
 
     public Task StartAsync(CancellationToken cancellationToken)
     {
-        _ = Task.Factory.StartNew(() =>
+        _ = Task.Factory.StartNew(async () =>
         {
             var rabbitMQConnection = _serviceProvider.GetRequiredService<IRabbitMqConnection>();
 
-            var channel = rabbitMQConnection.Connection.CreateModel();
+            var channel = await rabbitMQConnection.Connection.CreateChannelAsync();
 
-            channel.ExchangeDeclare(
+            await channel.ExchangeDeclareAsync(
                 exchange: ExchangeName,
                 type: "fanout",
                 durable: false,
                 autoDelete: false,
-                null);
+                arguments: null);
 
-            channel.QueueDeclare(
+            await channel.QueueDeclareAsync(
                 queue: QueueName,
                 durable: false,
                 exclusive: false,
                 autoDelete: false,
                 arguments: null);
 
-            var consumer = new EventingBasicConsumer(channel);
+            var consumer = new AsyncEventingBasicConsumer(channel);
 
-            consumer.Received += OnMessageReceived;
+            consumer.ReceivedAsync += OnMessageReceived;
 
-            channel.BasicConsume(
+            await channel.BasicConsumeAsync(
                 queue: QueueName,
                 autoAck: true,
                 consumer: consumer);
 
-            channel.QueueBind(
+            await channel.QueueBindAsync(
                 queue: QueueName,
                 exchange: ExchangeName,
                 routingKey: string.Empty);
@@ -60,7 +61,7 @@ public class RabbitMqHostedService : IHostedService
         return Task.CompletedTask;
     }
 
-    private void OnMessageReceived(object? sender, BasicDeliverEventArgs eventArgs)
+    private Task OnMessageReceived(object? sender, BasicDeliverEventArgs eventArgs)
     {
         var message = Encoding.UTF8.GetString(eventArgs.Body.Span);
 
@@ -71,6 +72,8 @@ public class RabbitMqHostedService : IHostedService
         var basketStore = scope.ServiceProvider.GetRequiredService<IBasketStore>();
 
         basketStore.DeleteCustomerBasket(@event.CustomerId);
+
+        return Task.CompletedTask;
     }
 
     public Task StopAsync(CancellationToken cancellationToken)

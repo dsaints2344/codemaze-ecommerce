@@ -1,0 +1,9 @@
+# The service Dockerfiles build from the repository root (so they can reach
+# shared-libs/local-nuget-packages); keep host build output and tooling out of the context.
+**/bin
+**/obj
+**/.vs
+**/.vscode
+**/.idea
+**/*.user
+.git

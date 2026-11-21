@@ -1,4 +1,4 @@
-﻿namespace Order.Service.Infrastructure.EventBus.Abstractions;
+namespace ECommerce.Shared.Infrastructure.EventBus.Abstractions;
 
 public interface IEventBus
 {

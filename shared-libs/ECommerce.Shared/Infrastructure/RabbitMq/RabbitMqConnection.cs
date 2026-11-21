@@ -1,6 +1,6 @@
-﻿using RabbitMQ.Client;
+using RabbitMQ.Client;
 
-namespace Order.Service.Infrastructure.RabbitMq;
+namespace ECommerce.Shared.Infrastructure.RabbitMq;
 
 public class RabbitMqConnection : IDisposable, IRabbitMqConnection
 {
@@ -23,7 +23,7 @@ public class RabbitMqConnection : IDisposable, IRabbitMqConnection
             HostName = _options.HostName
         };
 
-        _connection = factory.CreateConnection();
+        _connection = factory.CreateConnectionAsync().GetAwaiter().GetResult();
     }
 
     public void Dispose()

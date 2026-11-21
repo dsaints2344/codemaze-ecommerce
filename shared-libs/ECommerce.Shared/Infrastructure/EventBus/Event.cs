@@ -1,4 +1,4 @@
-﻿namespace Basket.Service.Infrastructure.EventBus;
+namespace ECommerce.Shared.Infrastructure.EventBus;
 
 public record Event
 {

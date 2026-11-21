@@ -1,8 +1,9 @@
-﻿using Order.Service.Infrastructure.EventBus;
-using Order.Service.Infrastructure.EventBus.Abstractions;
 using System.Text.Json;
+using ECommerce.Shared.Infrastructure.EventBus;
+using ECommerce.Shared.Infrastructure.EventBus.Abstractions;
+using RabbitMQ.Client;
 
-namespace Order.Service.Infrastructure.RabbitMq;
+namespace ECommerce.Shared.Infrastructure.RabbitMq;
 
 public class RabbitMqEventBus : IEventBus
 {
@@ -15,26 +16,23 @@ public class RabbitMqEventBus : IEventBus
         _rabbitMqConnection = rabbitMqConnection;
     }
 
-    public Task PublishAsync(Event @event)
+    public async Task PublishAsync(Event @event)
     {
-        using var channel = _rabbitMqConnection.Connection.CreateModel();
+        await using var channel = await _rabbitMqConnection.Connection.CreateChannelAsync();
 
-        channel.ExchangeDeclare(
-            exchange: ExchangeName, 
+        await channel.ExchangeDeclareAsync(
+            exchange: ExchangeName,
             type: "fanout",
             durable: false,
             autoDelete: false,
-            null);
+            arguments: null);
 
         var body = JsonSerializer.SerializeToUtf8Bytes(@event, @event.GetType());
 
-        channel.BasicPublish(
+        await channel.BasicPublishAsync(
             exchange: ExchangeName,
             routingKey: string.Empty,
             mandatory: false,
-            basicProperties: null,
             body: body);
-
-        return Task.CompletedTask;
     }
 }
